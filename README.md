@@ -30,11 +30,24 @@ El proyecto aún no cuenta con un manifiesto de dependencias (`requirements.txt`
 ```text
 .
 ├── manage.py
-├── db.sqlite3
-├── tienda/              # Configuración y rutas del proyecto
-├── productos/           # Modelos, formularios, vistas y rutas de la aplicación
-├── templates/           # Plantillas HTML
-└── UF2406ED01_*.txt     # Enunciados de la práctica
+├── tienda/                    # Configuración y rutas del proyecto
+├── productos/                 # Lógica de catálogo, usuarios y permisos
+│   ├── migrations/             # Cambios versionados del esquema
+│   ├── permissions.py          # Reglas de propietario y staff
+│   ├── models.py
+│   ├── forms.py
+│   ├── views.py
+│   ├── urls.py
+│   └── tests.py
+├── templates/
+│   ├── administracion/         # Panel interno para staff
+│   ├── categorias/
+│   ├── productos/
+│   ├── registration/           # Login y recuperación de contraseña
+│   ├── 403.html
+│   └── 404.html
+├── .gitignore
+└── README.md
 ```
 
 ## Instalación y ejecución
@@ -72,6 +85,18 @@ python manage.py createsuperuser
 
 El panel está disponible en <http://127.0.0.1:8000/admin/>. Detén el servidor con `Ctrl+C`.
 
+## Rutas principales
+
+| Ruta | Acceso | Uso |
+| --- | --- | --- |
+| `/productos/` | Público | Catálogo completo y propietarios |
+| `/productos/<id>/` | Público | Ficha del producto |
+| `/mis-productos/` | Usuario autenticado | Productos propios |
+| `/panel-admin/` | Usuario staff | Resumen de usuarios y productos; gestión de productos |
+| `/admin/` | Usuario autorizado de Django | Administración de modelos y cuentas |
+| `/accounts/login/` | Público | Inicio de sesión |
+| `/accounts/password_reset/` | Público | Solicitud de recuperación |
+
 ## Modelo de datos
 
 Una `Categoria` puede contener varios `Producto`; cada producto pertenece a una categoría. Un `Usuario` puede tener varios `Producto`; cada producto tiene un único propietario. Los productos guardan nombre, descripción, precio, categoría, propietario y fecha de creación. Al eliminar una categoría, Django elimina también sus productos asociados; al eliminar una cuenta, sus productos.
@@ -86,6 +111,8 @@ El propietario no se elige en el formulario: lo asigna la vista con `request.use
 Las reglas están centralizadas en `productos/permissions.py` con las funciones `puede_editar_producto` y `puede_eliminar_producto`. Las vistas responden **403 Forbidden** (plantilla `templates/403.html`) cuando no se cumple el permiso. En las plantillas se comprueba además `user.is_staff` para decidir si pintar botones, enlaces y el badge de rol, pero eso es solo interfaz: la comprobación real se hace en el servidor.
 
 Para dar permiso de administrador a una cuenta: `/admin/` → Usuarios → seleccionar la cuenta → marcar «Es staff».
+
+El proyecto está preparado para desarrollo local, no para desplegarse tal cual: `tienda/settings.py` mantiene `DEBUG = True`, `ALLOWED_HOSTS` vacío y una `SECRET_KEY` de desarrollo. Antes de publicarlo en producción, configura esos valores de forma segura y no reutilices la clave incluida.
 
 ## Recuperación de contraseña
 
