@@ -29,5 +29,9 @@ __pycache__/
 venv/
 .venv/
 
+# Enunciados de la práctica (no subir documentación fuente)
+UF2406ED01_*.pdf
+UF2406ED01_*.txt
+
 # Base de datos local (se genera con migrate)
 db.sqlite3
