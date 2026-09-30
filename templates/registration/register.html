@@ -1,0 +1,95 @@
+{# Registro de usuarios, presentado como tarjeta centrada. #}
+{% extends "base.html" %}
+
+{% block title %}
+Registro
+{% endblock %}
+
+{% block content %}
+
+{# row justify-content-center + col-* centra la tarjeta en pantalla #}
+{# ancha; en móvil ocupa todo el ancho disponible. #}
+<div class="row justify-content-center">
+
+    <div class="col-md-7 col-lg-5">
+
+        <div class="card shadow-sm">
+
+            <div class="card-body">
+
+                <h1 class="h3 mb-4">
+                    Crear cuenta
+                </h1>
+
+                <form method="post">
+
+                    {% csrf_token %}
+
+                                        {# En vez de form.as_p recorremos campo a campo para #}
+                    {# poder poner label, errores y ayuda por separado. #}
+                    {# El input ya sale con clase form-control gracias al #}
+                    {# BootstrapFormMixin de forms.py. #}
+                    {% for field in form %}
+
+                        <div class="mb-3">
+
+                            <label class="form-label">
+                                {{ field.label }}
+                            </label>
+
+                            {{ field }}
+
+                                                        {# Ayuda de Django, por ejemplo "se recomienda #}
+                            {# una contraseña difícil de adivinar". #}
+                            {% if field.help_text %}
+
+                                <div class="form-text">
+                                    {{ field.help_text|safe }}
+                                </div>
+
+                            {% endif %}
+
+                                                        {# Errores de este campo concretos, en rojo #}
+                            {# y debajo, en vez de un muro de texto. #}
+                            {% for error in field.errors %}
+
+                                <div class="text-danger small">
+                                    {{ error }}
+                                </div>
+
+                            {% endfor %}
+
+                        </div>
+
+                    {% endfor %}
+
+                    <button
+                        type="submit"
+                        class="btn btn-primary w-100"
+                    >
+                        Registrarse
+                    </button>
+
+                </form>
+
+                <hr>
+
+                <p class="mb-0 text-center">
+
+                    ¿Ya tienes cuenta?
+
+                    <a href="{% url 'login' %}">
+                        Iniciar sesión
+                    </a>
+
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

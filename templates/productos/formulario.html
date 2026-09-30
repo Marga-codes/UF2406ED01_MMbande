@@ -1,0 +1,78 @@
+{# Formulario de productos (alta y edición) como tarjeta centrada. #}
+{# La vista pasa en "titulo" si es "Nuevo producto" o "Editar producto". #}
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="row justify-content-center">
+
+    <div class="col-md-8">
+
+        <div class="card shadow-sm">
+
+            <div class="card-body">
+
+                <h1 class="h3 mb-4">
+
+                    {{ titulo }}
+
+                </h1>
+
+                <form method="post">
+
+                    {% csrf_token %}
+
+                                        {# Campo a campo para poder pintar los errores en rojo #}
+                    {# debajo de cada uno. Las clases form-control ya vienen #}
+                    {# del BootstrapFormMixin. #}
+                    {% for field in form %}
+
+                        <div class="mb-3">
+
+                            <label class="form-label">
+
+                                {{ field.label }}
+
+                            </label>
+
+                            {{ field }}
+
+                            {% for error in field.errors %}
+
+                                <div class="text-danger small">
+                                    {{ error }}
+                                </div>
+
+                            {% endfor %}
+
+                        </div>
+
+                    {% endfor %}
+
+                    <button
+                        type="submit"
+                        class="btn btn-primary"
+                    >
+                        Guardar
+                    </button>
+
+                                        {# Cancelar vuelve a la lista sin guardar nada: #}
+                    {# es un simple enlace, no un envío del formulario. #}
+                    <a
+                        href="{% url 'producto_lista' %}"
+                        class="btn btn-secondary"
+                    >
+                        Cancelar
+                    </a>
+
+                </form>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

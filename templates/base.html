@@ -1,0 +1,209 @@
+{# Plantilla de la que cuelgan todas las demás. #}
+{# Aquí está el menú, los avisos (messages) y el hueco donde se #}
+{# inserta el contenido de cada página. #}
+{# Versión con Bootstrap 5: navbar responsive y alertas de mensajes. #}
+<!DOCTYPE html>
+
+<html lang="es">
+
+<head>
+
+    <meta charset="UTF-8">
+
+        {# Sin esta meta etiqueta Bootstrap no se adapta a móvil: no habría #}
+    {# botón de hamburguesa en pantallas pequeñas. #}
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1"
+    >
+
+    <title>
+        {% block title %}
+        Tienda Django
+        {% endblock %}
+    </title>
+
+        {# CSS de Bootstrap 5 desde el CDN: no hay nada que instalar, #}
+    {# solo esta línea. El resto es la clase de cada elemento. #}
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        rel="stylesheet"
+    >
+
+</head>
+
+{# bg-light pinta el fondo de la página de gris claro. #}
+<body class="bg-light">
+
+        {# navbar-dark + bg-dark = texto blanco sobre fondo oscuro. #}
+    {# expand-lg añade el botón de hamburguesa por debajo de lg. #}
+    <nav
+        class="navbar navbar-expand-lg navbar-dark bg-dark"
+    >
+
+        <div class="container">
+
+            <a
+                class="navbar-brand"
+                href="{% url 'home' %}"
+            >
+                Tienda Django
+            </a>
+
+                        {# Este botón solo aparece en móvil. Al pulsarlo despliega #}
+            {# el menú en el div de abajo (data-bs-target es su id). #}
+            <button
+                class="navbar-toggler"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#navbarPrincipal"
+            >
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div
+                class="collapse navbar-collapse"
+                id="navbarPrincipal"
+            >
+
+                {# me-auto empuja el bloque de la derecha hacia el final. #}
+                <ul class="navbar-nav me-auto">
+
+                    <li class="nav-item">
+
+                        <a
+                            class="nav-link"
+                            href="{% url 'producto_lista' %}"
+                        >
+                            Productos
+                        </a>
+
+                    </li>
+
+                    {% if user.is_authenticated %}
+
+                    <li class="nav-item">
+
+                        <a
+                            class="nav-link"
+                            href="{% url 'categoria_lista' %}"
+                        >
+                            Categorías
+                        </a>
+
+                    </li>
+
+                    {% endif %}
+
+                </ul>
+
+                                {# d-flex + gap-2 deja los elementos de la derecha en fila #}
+                {# y separados. #}
+                <div class="d-flex align-items-center gap-2">
+
+                    {% if user.is_authenticated %}
+
+                        <span class="text-white">
+
+                            Hola,
+                            {{ user.username }}
+
+                        </span>
+
+                                                {# El logout sigue siendo POST con csrf_token: #}
+                        {# un enlace normal (GET) no debe cerrar sesiones. #}
+                        <form
+                            method="post"
+                            action="{% url 'logout' %}"
+                        >
+
+                            {% csrf_token %}
+
+                            <button
+                                type="submit"
+                                class="btn btn-outline-light btn-sm"
+                            >
+                                Cerrar sesión
+                            </button>
+
+                        </form>
+
+                    {% else %}
+
+                        <a
+                            href="{% url 'login' %}"
+                            class="btn btn-outline-light btn-sm"
+                        >
+                            Login
+                        </a>
+
+                        <a
+                            href="{% url 'register' %}"
+                            class="btn btn-primary btn-sm"
+                        >
+                            Registrarse
+                        </a>
+
+                    {% endif %}
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </nav>
+
+        {# Todo el contenido de cada página entra dentro de este contenedor, #}
+    {# con margen arriba y abajo (py-4). #}
+    <main class="container py-4">
+
+                {# Los mensajes que las vistas guardan con messages.success/error #}
+        {# se pintan aquí como alertas de Bootstrap. #}
+        {# Ojo con los tags: Django usa "error" y Bootstrap no tiene #}
+        {# alert-error (su color de error es alert-danger), por eso el #}
+        {# if especial; el resto (success, info, warning) encajan solos #}
+        {# con alert-{{ message.tags }}. #}
+        {% if messages %}
+
+            {% for message in messages %}
+
+                <div
+                    class="alert
+                    {% if message.tags == 'error' %}
+                        alert-danger
+                    {% else %}
+                        alert-{{ message.tags }}
+                    {% endif %}
+                    alert-dismissible fade show"
+                >
+
+                    {{ message }}
+
+                    {# La "x" para cerrar la alerta sin recargar. #}
+                    <button
+                        type="button"
+                        class="btn-close"
+                        data-bs-dismiss="alert"
+                    ></button>
+
+                </div>
+
+            {% endfor %}
+
+        {% endif %}
+
+        {% block content %}
+        {% endblock %}
+
+    </main>
+
+        {# JS de Bootstrap (bundle = JS + Popper). Hace falta para el menú #}
+    {# móvil, las alertas que se cierran solas, etc. #}
+    <script
+        src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+    ></script>
+
+</body>
+
+</html>

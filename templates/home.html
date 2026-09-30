@@ -1,0 +1,65 @@
+{# Página de inicio. Hereda todo de base.html y solo cambia el contenido. #}
+{% extends "base.html" %}
+
+{% block title %}
+Inicio
+{% endblock %}
+
+{% block content %}
+
+{# Tarjeta blanca con sombra sobre el fondo gris de base.html. #}
+{# p-5 le da mucho aire por dentro. #}
+<div class="p-5 bg-white rounded shadow-sm">
+
+    <h1 class="display-5 fw-bold">
+        Tienda Django
+    </h1>
+
+    {# lead = texto un poco más grande y gris, para frases de entrada. #}
+    <p class="lead">
+
+        Proyecto desarrollado con Django,
+        autenticación de usuarios,
+        CRUD y recuperación de contraseña.
+
+    </p>
+
+        {# Si hay sesión abierta saludamos por nombre y directamente #}
+    {# llevamos al catálogo; si no, invitamos a entrar o a crear cuenta. #}
+    {% if user.is_authenticated %}
+
+        <p>
+            Has iniciado sesión como
+            <strong>
+                {{ user.username }}
+            </strong>.
+        </p>
+
+        <a
+            href="{% url 'producto_lista' %}"
+            class="btn btn-primary"
+        >
+            Ver productos
+        </a>
+
+    {% else %}
+
+        <a
+            href="{% url 'login' %}"
+            class="btn btn-primary"
+        >
+            Iniciar sesión
+        </a>
+
+        <a
+            href="{% url 'register' %}"
+            class="btn btn-outline-primary"
+        >
+            Crear cuenta
+        </a>
+
+    {% endif %}
+
+</div>
+
+{% endblock %}

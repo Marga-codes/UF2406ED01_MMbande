@@ -1,0 +1,128 @@
+{# Listado de categorías como tabla. Solo lo ven los usuarios con #}
+{# sesión abierta, porque la vista lleva @login_required. #}
+{% extends "base.html" %}
+
+{% block content %}
+
+{# Título a la izquierda y botón de alta a la derecha. #}
+<div
+    class="d-flex justify-content-between
+    align-items-center mb-4"
+>
+
+    <h1>
+        Categorías
+    </h1>
+
+    <a
+        href="{% url 'categoria_crear' %}"
+        class="btn btn-primary"
+    >
+        + Nueva categoría
+    </a>
+
+</div>
+
+<div class="card shadow-sm">
+
+    <div class="card-body">
+
+                {# table-responsive: si la tabla no cabe, aparece un scroll #}
+        {# horizontal en vez de romper el diseño. #}
+        <div class="table-responsive">
+
+                        {# table-hover pinta la fila gris cuando el ratón pasa #}
+            {# por encima, lo que ayuda a seguir la línea. #}
+            <table class="table table-hover">
+
+                <thead>
+
+                    <tr>
+
+                        <th>
+                            Nombre
+                        </th>
+
+                        <th>
+                            Descripción
+                        </th>
+
+                        <th>
+                            Productos
+                        </th>
+
+                        <th>
+                            Acciones
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+                <tbody>
+
+                    {% for categoria in categorias %}
+
+                        <tr>
+
+                            <td>
+                                {{ categoria.nombre }}
+                            </td>
+
+                            <td>
+                                {{ categoria.descripcion }}
+                            </td>
+
+                                                        {# productos viene del related_name del #}
+                            {# ForeignKey: cuenta cuántos productos #}
+                            {# cuelgan de esta categoría. #}
+                            <td>
+                                {{ categoria.productos.count }}
+                            </td>
+
+                            <td>
+                                <a
+                                    href="{% url 'categoria_editar' categoria.pk %}"
+                                    class="btn btn-sm btn-outline-secondary"
+                                >
+                                    Editar
+                                </a>
+
+                                <a
+                                    href="{% url 'categoria_eliminar' categoria.pk %}"
+                                    class="btn btn-sm btn-outline-danger"
+                                >
+                                    Eliminar
+                                </a>
+
+                            </td>
+
+                        </tr>
+
+                    {% empty %}
+
+                                                {# Sin filas: una sola celda que ocupa las cuatro #}
+                        {# columnas gracias al colspan. #}
+                        <tr>
+
+                            <td colspan="4">
+
+                                No existen categorías.
+
+                            </td>
+
+                        </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}
