@@ -4,17 +4,25 @@ Modelos de la aplicación productos.
 Aquí definimos las dos tablas de la base de datos:
 
 - Categoria: nombre, descripción y cuándo se creó.
-- Producto:  lo mismo, más el precio y la categoría a la que pertenece.
+- Producto:  lo mismo, más el precio, la categoría a la que
+             pertenece y el usuario propietario.
 
 La relación es de uno a muchos:
 
     Categoria 1 -------- N Producto
+    Usuario   1 -------- N Producto
 
 Una categoría puede tener muchos productos,
 y un producto solamente pertenece a una categoría.
+Al mismo tiempo, cada producto lo ha creado un usuario
+y solo ese usuario puede editarlo o borrarlo.
 """
 
 from django.db import models
+
+# User es el modelo de cuentas que trae Django (django.contrib.auth).
+# Lo importamos porque Producto guarda a quién pertenece.
+from django.contrib.auth.models import User
 
 
 class Categoria(models.Model):
@@ -55,6 +63,23 @@ class Producto(models.Model):
     # el enunciado (y la que avisa el formulario de eliminar categoría).
     categoria = models.ForeignKey(
         Categoria,
+        on_delete=models.CASCADE,
+        related_name="productos"
+    )
+
+    # El propietario. Es el campo nuevo del ejercicio 3 y el que
+    # permite responder a la pregunta "¿de quién es este producto?".
+    #
+    # on_delete=models.CASCADE: si borramos la cuenta de usuario,
+    # desaparecen también los productos que creó.
+    #
+    # related_name="productos" nos da request.user.productos.all()
+    # para listar lo que ha creado alguien sin necesidad de filtrar.
+    #
+    # Este campo NUNCA aparece en el formulario: lo rellena la vista
+    # con request.user para que nadie pueda crear productos ajenos.
+    usuario = models.ForeignKey(
+        User,
         on_delete=models.CASCADE,
         related_name="productos"
     )

@@ -18,7 +18,7 @@ Productos
         Productos
     </h1>
 
-        {# El botón de dar de alta solo aparece a quien ha iniciado sesión, #}
+    {# El botón de dar de alta solo aparece a quien ha iniciado sesión, #}
     {# porque la vista producto_crear está protegida. #}
     {% if user.is_authenticated %}
 
@@ -56,11 +56,21 @@ Productos
 
                     <p class="text-muted">
 
+                        Categoría:
                         {{ producto.categoria.nombre }}
 
                     </p>
 
-                                        {# truncatewords:20 corta la descripción a 20 palabras #}
+                    {# El propietario viene de select_related("usuario") #}
+                    {# en la vista: sin eso sería una consulta más por tarjeta. #}
+                    <p class="text-muted">
+
+                        Publicado por:
+                        {{ producto.usuario.username }}
+
+                    </p>
+
+                    {# truncatewords:20 corta la descripción a 20 palabras #}
                     {# para que las tarjetas no se desmonten. #}
                     <p class="card-text">
 
@@ -86,7 +96,11 @@ Productos
                         Ver
                     </a>
 
-                    {% if user.is_authenticated %}
+                    {# Editar y Eliminar solo para el dueño del producto. #}
+                    {# Ojo: esto es comodidad de interfaz, no seguridad: #}
+                    {# la seguridad real está en producto_editar/eliminar, #}
+                    {# que filtran por usuario=request.user y devuelven 404. #}
+                    {% if user == producto.usuario %}
 
                         <a
                             href="{% url 'producto_editar' producto.pk %}"

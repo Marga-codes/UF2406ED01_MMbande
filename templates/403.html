@@ -1,0 +1,35 @@
+{# Página que Django muestra cuando una vista lanza PermissionDenied. #}
+{# En este proyecto casi todo devuelve 404 (no se revela que el recurso #}
+{# existe), pero la plantilla queda preparada por si cambiamos de #}
+{# estrategia y preferimos el 403 explícito. #}
+{% extends "base.html" %}
+
+{% block title %}
+Acceso denegado
+{% endblock %}
+
+{% block content %}
+
+<div class="alert alert-danger">
+
+    <h1>
+        Acceso denegado
+    </h1>
+
+    <p>
+
+        No tienes permiso para realizar
+        esta operación.
+
+    </p>
+
+</div>
+
+<a
+    href="{% url 'home' %}"
+    class="btn btn-primary"
+>
+    Volver al inicio
+</a>
+
+{% endblock %}

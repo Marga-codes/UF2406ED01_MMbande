@@ -1,0 +1,156 @@
+{# Zona personal: solo los productos que ha creado el usuario de la sesión. #}
+{# La filtración no pasa aquí, sino en la vista con filter(usuario=request.user). #}
+{% extends "base.html" %}
+
+{% block title %}
+Mis productos
+{% endblock %}
+
+{% block content %}
+
+{# Título con subtítulo a la izquierda y botón de alta a la derecha. #}
+<div
+    class="d-flex justify-content-between
+    align-items-center mb-4"
+>
+
+    <div>
+
+        <h1>
+            Mis productos
+        </h1>
+
+        <p class="text-muted mb-0">
+
+            Productos creados por
+            {{ user.username }}.
+
+        </p>
+
+    </div>
+
+    <a
+        href="{% url 'producto_crear' %}"
+        class="btn btn-primary"
+    >
+        + Nuevo producto
+    </a>
+
+</div>
+
+{% if productos %}
+
+    <div class="table-responsive">
+
+        <table
+            class="table table-hover
+            align-middle bg-white shadow-sm"
+        >
+
+            <thead>
+
+                <tr>
+
+                    <th>
+                        Producto
+                    </th>
+
+                    <th>
+                        Categoría
+                    </th>
+
+                    <th>
+                        Precio
+                    </th>
+
+                    <th>
+                        Fecha
+                    </th>
+
+                    <th>
+                        Acciones
+                    </th>
+
+                </tr>
+
+            </thead>
+
+            <tbody>
+
+                {% for producto in productos %}
+
+                    <tr>
+
+                        <td>
+                            {{ producto.nombre }}
+                        </td>
+
+                        <td>
+                            {{ producto.categoria.nombre }}
+                        </td>
+
+                        <td>
+                            {{ producto.precio }} €
+                        </td>
+
+                        {# date formatea la fecha: día/mes/año y hora. #}
+                        <td>
+                            {{ producto.fecha_creacion|date:"d/m/Y H:i" }}
+                        </td>
+
+                        {# Aquí no hace falta comprobar el propietario: #}
+                        {# en esta tabla solo hay productos propios. #}
+                        <td>
+
+                            <a
+                                href="{% url 'producto_detalle' producto.pk %}"
+                                class="btn btn-sm btn-outline-primary"
+                            >
+                                Ver
+                            </a>
+
+                            <a
+                                href="{% url 'producto_editar' producto.pk %}"
+                                class="btn btn-sm btn-outline-secondary"
+                            >
+                                Editar
+                            </a>
+
+                            <a
+                                href="{% url 'producto_eliminar' producto.pk %}"
+                                class="btn btn-sm btn-outline-danger"
+                            >
+                                Eliminar
+                            </a>
+
+                        </td>
+
+                    </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+{% else %}
+
+    {# Cuenta recién creada o que todavía no ha publicado nada. #}
+    <div class="alert alert-info">
+
+        Todavía no has creado ningún producto.
+
+    </div>
+
+    <a
+        href="{% url 'producto_crear' %}"
+        class="btn btn-primary"
+    >
+        Crear mi primer producto
+    </a>
+
+{% endif %}
+
+{% endblock %}

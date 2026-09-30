@@ -66,18 +66,29 @@ urlpatterns = [
         name="producto_lista"
     ),
 
-    # Detalle de un producto. El conversor <int:pk> solo acepta números,
-    # así que esta ruta no se lleva por delante a /productos/nuevo/.
+    # Listado privado con los productos del usuario que ha iniciado
+    # sesión. Va en la raíz (mis-productos/) y no dentro de /productos/
+    # porque no es el catálogo: es la zona personal de cada cual.
     path(
-        "productos/<int:pk>/",
-        views.producto_detalle,
-        name="producto_detalle"
+        "mis-productos/",
+        views.mis_productos,
+        name="mis_productos"
     ),
 
+    # Detalle de un producto. El conversor <int:pk> solo acepta números,
+    # así que esta ruta no se lleva por delante a /productos/nuevo/.
+    # Aun así, nuevo/ va primero para que la lectura del archivo sea
+    # más clara: primero las rutas fijas, luego las que llevan id.
     path(
         "productos/nuevo/",
         views.producto_crear,
         name="producto_crear"
+    ),
+
+    path(
+        "productos/<int:pk>/",
+        views.producto_detalle,
+        name="producto_detalle"
     ),
 
     path(

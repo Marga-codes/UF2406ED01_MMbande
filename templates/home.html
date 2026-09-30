@@ -35,6 +35,21 @@ Inicio
             </strong>.
         </p>
 
+        {# Contador de productos propios. Gracias al related_name #}
+        {# "productos" del modelo: user.productos es la colección de #}
+        {# productos que ha creado esta cuenta. #}
+        <p>
+
+            Has creado:
+
+            <strong>
+                {{ user.productos.count }}
+            </strong>
+
+            producto(s).
+
+        </p>
+
         <a
             href="{% url 'producto_lista' %}"
             class="btn btn-primary"

@@ -249,11 +249,16 @@ def producto_lista(request):
 
     # Esta vista no lleva @login_required: el catálogo es público,
     # cualquiera puede ver los productos sin entrar.
-    # select_related("categoria") trae la categoría en la misma consulta,
-    # así evitamos una consulta extra por cada producto al pintar la lista.
+    #
+    # select_related("categoria", "usuario") trae la categoría y el
+    # propietario en la misma consulta, así evitamos una consulta extra
+    # por producto al pintar la lista.
+    #
+    # order_by("-fecha_creacion"): los más nuevos primero.
     productos = Producto.objects.select_related(
-        "categoria"
-    )
+        "categoria",
+        "usuario",
+    ).order_by("-fecha_creacion")
 
     return render(
         request,
@@ -267,9 +272,14 @@ def producto_lista(request):
 # Detalle de un producto
 def producto_detalle(request, pk):
 
-    # Vista pública también: solo lectura.
+    # Vista pública también: solo lectura. Traemos el propietario
+    # junto al producto para poder mostrar "Propietario: ..." y para
+    # comparar en la plantilla si quien mira es el dueño.
     producto = get_object_or_404(
-        Producto,
+        Producto.objects.select_related(
+            "categoria",
+            "usuario",
+        ),
         pk=pk
     )
 
@@ -292,14 +302,27 @@ def producto_crear(request):
 
         if form.is_valid():
 
-            form.save()
+            # commit=False crea el objeto en memoria sin guardarlo todavía.
+            # Es el truco que nos deja rellenar el campo usuario, que no
+            # viene en el formulario: nadie podría enviarlo a mano.
+            producto = form.save(
+                commit=False
+            )
+
+            # El propietario es quien está logueado, no lo elige nadie.
+            producto.usuario = request.user
+
+            # Ya con el dueño puesto, sí lo guardamos en la base de datos.
+            producto.save()
 
             messages.success(
                 request,
                 "Producto creado correctamente."
             )
 
-            return redirect("producto_lista")
+            # Volvemos a "Mis productos", que es donde aparece el recién
+            # creado y donde solo se listan los del usuario actual.
+            return redirect("mis_productos")
 
     else:
 
@@ -315,13 +338,47 @@ def producto_crear(request):
     )
 
 
+# ----------------------------------------------------------------------
+# "Mis productos": el listado privado de lo que ha creado cada cual
+# ----------------------------------------------------------------------
+@login_required
+def mis_productos(request):
+
+    # filter(usuario=request.user) es la clave de esta página:
+    # solo los productos cuyo propietario soy yo. Sin esa condición
+    # saldrían todos los de la base de datos.
+    productos = Producto.objects.filter(
+        usuario=request.user
+    ).select_related(
+        "categoria"
+    ).order_by(
+        "-fecha_creacion"
+    )
+
+    return render(
+        request,
+        "productos/mis_productos.html",
+        {
+            "productos": productos
+        }
+    )
+
+
 # Editar producto
 @login_required
 def producto_editar(request, pk):
 
+    # Aquí está la seguridad real del ejercicio 3.
+    # Al añadir usuario=request.user a la consulta, Django busca un
+    # producto que a la vez tenga esa id Y me pertenezca a mí.
+    #
+    # Si maría se inventa la url /productos/5/editar/ de un producto
+    # de juan, no encuentra nada y devuelve 404: ni siquiera sabe que
+    # el producto existe.
     producto = get_object_or_404(
         Producto,
-        pk=pk
+        pk=pk,
+        usuario=request.user
     )
 
     if request.method == "POST":
@@ -340,7 +397,7 @@ def producto_editar(request, pk):
                 "Producto actualizado correctamente."
             )
 
-            return redirect("producto_lista")
+            return redirect("mis_productos")
 
     else:
 
@@ -362,9 +419,13 @@ def producto_editar(request, pk):
 @login_required
 def producto_eliminar(request, pk):
 
+    # Mismo filtro que en la edición: propietario incluido.
+    # Un usuario no puede borrar productos de otros ni siquiera
+    # escribiendo la URL a mano.
     producto = get_object_or_404(
         Producto,
-        pk=pk
+        pk=pk,
+        usuario=request.user
     )
 
     if request.method == "POST":
@@ -376,7 +437,7 @@ def producto_eliminar(request, pk):
             "Producto eliminado correctamente."
         )
 
-        return redirect("producto_lista")
+        return redirect("mis_productos")
 
     return render(
         request,

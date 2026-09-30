@@ -30,6 +30,63 @@
         rel="stylesheet"
     >
 
+    <style>
+        :root {
+            --bs-primary: #b84d36;
+            --bs-primary-rgb: 184, 77, 54;
+            --bs-link-color: #b84d36;
+            --bs-link-color-rgb: 184, 77, 54;
+            --bs-link-hover-color: #913a2b;
+            --bs-link-hover-color-rgb: 145, 58, 43;
+            --bs-body-color: #293431;
+            --bs-body-bg: #f4f7f4;
+            --bs-light: #f4f7f4;
+            --bs-light-rgb: 244, 247, 244;
+            --bs-dark: #2e3d39;
+            --bs-dark-rgb: 46, 61, 57;
+            --bs-focus-ring-color: rgba(184, 77, 54, 0.25);
+        }
+
+        .btn-primary {
+            --bs-btn-color: #fff;
+            --bs-btn-bg: #b84d36;
+            --bs-btn-border-color: #b84d36;
+            --bs-btn-hover-color: #fff;
+            --bs-btn-hover-bg: #a3422f;
+            --bs-btn-hover-border-color: #963d2b;
+            --bs-btn-focus-shadow-rgb: 184, 77, 54;
+            --bs-btn-active-color: #fff;
+            --bs-btn-active-bg: #963d2b;
+            --bs-btn-active-border-color: #893725;
+            --bs-btn-disabled-color: #fff;
+            --bs-btn-disabled-bg: #b84d36;
+            --bs-btn-disabled-border-color: #b84d36;
+        }
+
+        .btn-outline-primary {
+            --bs-btn-color: #b84d36;
+            --bs-btn-border-color: #b84d36;
+            --bs-btn-hover-color: #fff;
+            --bs-btn-hover-bg: #b84d36;
+            --bs-btn-hover-border-color: #b84d36;
+            --bs-btn-focus-shadow-rgb: 184, 77, 54;
+            --bs-btn-active-color: #fff;
+            --bs-btn-active-bg: #a3422f;
+            --bs-btn-active-border-color: #a3422f;
+            --bs-btn-disabled-color: #b84d36;
+            --bs-btn-disabled-bg: transparent;
+            --bs-btn-disabled-border-color: #b84d36;
+        }
+
+        .card {
+            --bs-card-border-color: #e1e7e2;
+        }
+
+        .card-footer.bg-white {
+            background-color: #fbfcfa !important;
+        }
+    </style>
+
 </head>
 
 {# bg-light pinta el fondo de la página de gris claro. #}
@@ -89,6 +146,18 @@
                             href="{% url 'categoria_lista' %}"
                         >
                             Categorías
+                        </a>
+
+                    </li>
+
+                    {# Zona personal: solo los productos de esta cuenta. #}
+                    <li class="nav-item">
+
+                        <a
+                            class="nav-link"
+                            href="{% url 'mis_productos' %}"
+                        >
+                            Mis productos
                         </a>
 
                     </li>

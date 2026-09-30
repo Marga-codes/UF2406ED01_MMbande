@@ -1,49 +1,92 @@
-{# Ficha completa de un producto, con sus enlaces de edición y borrado. #}
+{# Ficha pública de un producto. Cualquiera puede verla, pero los #}
+{# botones de editar y borrar solo salen si quien mira es el dueño. #}
 {% extends "base.html" %}
 
 {% block content %}
 
-<h1>
-    {{ producto.nombre }}
-</h1>
+<div class="card shadow-sm">
 
-<p>
+    <div class="card-body">
 
-    <strong>Categoría:</strong>
+        <h1>
 
-    {{ producto.categoria.nombre }}
+            {{ producto.nombre }}
 
-</p>
+        </h1>
 
-<p>
+        <p>
 
-    <strong>Descripción:</strong>
+            <strong>
+                Categoría:
+            </strong>
 
-    {{ producto.descripcion }}
+            {{ producto.categoria.nombre }}
 
-</p>
+        </p>
 
-<p>
+        <p>
 
-    <strong>Precio:</strong>
+            <strong>
+                Precio:
+            </strong>
 
-    {{ producto.precio }} €
+            {{ producto.precio }} €
 
-</p>
+        </p>
 
-{# Enlaces a los que solo tiene sentido si hay sesión abierta. #}
-{% if user.is_authenticated %}
+        {# De quién es: el propietario se trae con el producto gracias #}
+        {# a select_related("usuario") en la vista. #}
+        <p>
 
-    <a href="{% url 'producto_editar' producto.pk %}">
-        Editar
-    </a>
+            <strong>
+                Propietario:
+            </strong>
 
-    |
+            {{ producto.usuario.username }}
 
-    <a href="{% url 'producto_eliminar' producto.pk %}">
-        Eliminar
-    </a>
+        </p>
 
-{% endif %}
+        <p>
+
+            <strong>
+                Descripción:
+            </strong>
+
+        </p>
+
+        <p>
+
+            {{ producto.descripcion }}
+
+        </p>
+
+        {# user == producto.usuario compara el visitante con el dueño. #}
+        {# Si no coincide, ni siquiera se pintan los enlaces. #}
+        {# La vista sigue protegida igual: aunque alguien teclee la #}
+        {# URL a mano, get_object_or_404(..., usuario=request.user) #}
+        {# devuelve 404. #}
+        {% if user == producto.usuario %}
+
+            <hr>
+
+            <a
+                href="{% url 'producto_editar' producto.pk %}"
+                class="btn btn-secondary"
+            >
+                Editar
+            </a>
+
+            <a
+                href="{% url 'producto_eliminar' producto.pk %}"
+                class="btn btn-danger"
+            >
+                Eliminar
+            </a>
+
+        {% endif %}
+
+    </div>
+
+</div>
 
 {% endblock %}

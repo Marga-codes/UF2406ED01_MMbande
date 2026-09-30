@@ -153,6 +153,10 @@ class ProductoForm(
 
     class Meta:
         model = Producto
+        # Ojo: "usuario" NO está en la lista, y es intencionado.
+        # El propietario no se elige en el formulario porque nadie
+        # debería poder crear productos ajenos; lo asigna la vista
+        # con request.user usando form.save(commit=False).
         fields = [
             "nombre",
             "descripcion",

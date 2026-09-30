@@ -32,12 +32,15 @@ class DatosDePrueba:
         )
 
     @staticmethod
-    def producto(categoria, nombre="Portátil", precio="799.99"):
+    def producto(categoria, usuario, nombre="Portátil", precio="799.99"):
+        # El propietario es obligatorio desde el ejercicio 3:
+        # sin él Django no deja guardar el producto.
         return Producto.objects.create(
             nombre=nombre,
             descripcion="Portátil para estudiante.",
             precio=Decimal(precio),
             categoria=categoria,
+            usuario=usuario,
         )
 
     @staticmethod
@@ -61,7 +64,7 @@ class VistasPublicasTests(TestCase):
 
     def test_listado_de_productos(self):
         cat = DatosDePrueba.categoria()
-        DatosDePrueba.producto(cat)
+        DatosDePrueba.producto(cat, DatosDePrueba.usuario())
 
         response = self.client.get(reverse("producto_lista"))
 
@@ -72,7 +75,7 @@ class VistasPublicasTests(TestCase):
 
     def test_detalle_de_producto(self):
         cat = DatosDePrueba.categoria()
-        producto = DatosDePrueba.producto(cat)
+        producto = DatosDePrueba.producto(cat, DatosDePrueba.usuario())
 
         response = self.client.get(
             reverse("producto_detalle", args=[producto.pk])
@@ -211,7 +214,7 @@ class CrudProductosTests(TestCase):
         self.assertContains(response, "Producto creado correctamente.")
 
     def test_editar(self):
-        producto = DatosDePrueba.producto(self.categoria)
+        producto = DatosDePrueba.producto(self.categoria, self.usuario)
 
         response = self.client.post(
             reverse("producto_editar", args=[producto.pk]),
@@ -230,7 +233,7 @@ class CrudProductosTests(TestCase):
         self.assertEqual(producto.precio, Decimal("849.99"))
 
     def test_eliminar(self):
-        producto = DatosDePrueba.producto(self.categoria)
+        producto = DatosDePrueba.producto(self.categoria, self.usuario)
 
         response = self.client.post(
             reverse("producto_eliminar", args=[producto.pk]),
@@ -391,3 +394,183 @@ class RecuperarContrasenaTests(TestCase):
                 username="juan", password="OtraClaveSegura2026!"
             )
         )
+
+
+# ----------------------------------------------------------------------
+# Ejercicio 3: propiedad de los productos y control de permisos
+# ----------------------------------------------------------------------
+class PropiedadDeProductosTests(TestCase):
+
+    def setUp(self):
+        self.juan = DatosDePrueba.usuario("juan", "juan@email.com")
+        self.maria = DatosDePrueba.usuario("maria", "maria@email.com")
+        self.categoria = DatosDePrueba.categoria()
+        self.producto_de_juan = DatosDePrueba.producto(
+            self.categoria, self.juan, nombre="Portátil"
+        )
+
+    def test_crear_producto_asigna_como_dueno_a_request_user(self):
+        # Juan crea un producto: el propietario tiene que ser él,
+        # sin que el formulario permita elegirlo.
+        self.client.force_login(self.juan)
+
+        self.client.post(
+            reverse("producto_crear"),
+            {
+                "nombre": "Monitor",
+                "descripcion": "24 pulgadas",
+                "precio": "149.99",
+                "categoria": self.categoria.pk,
+                # Por mucho que alguien meta "usuario" a mano en el
+                # POST, el formulario lo ignora: no está en fields.
+                "usuario": self.maria.pk,
+            },
+        )
+
+        producto = Producto.objects.get(nombre="Monitor")
+        self.assertEqual(producto.usuario, self.juan)
+
+    def test_tras_crear_te_manda_a_mis_productos(self):
+        self.client.force_login(self.juan)
+
+        respuesta = self.client.post(
+            reverse("producto_crear"),
+            {
+                "nombre": "Teclado",
+                "descripcion": "mecánico",
+                "precio": "39.99",
+                "categoria": self.categoria.pk,
+            },
+            follow=False,
+        )
+
+        self.assertEqual(respuesta.status_code, 302)
+        self.assertIn(reverse("mis_productos"), respuesta.headers["Location"])
+
+    def test_mis_productos_solo_los_mios(self):
+        DatosDePrueba.producto(self.categoria, self.maria, nombre="Ratón")
+        self.client.force_login(self.maria)
+
+        respuesta = self.client.get(reverse("mis_productos"))
+
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertTemplateUsed(response=respuesta, template_name="productos/mis_productos.html")
+        # Lo suyo aparece...
+        self.assertContains(respuesta, "Ratón")
+        # ...y el de otros no.
+        self.assertNotContains(respuesta, "Portátil")
+
+    def test_mis_productos_pide_login(self):
+        respuesta = self.client.get(reverse("mis_productos"))
+
+        self.assertEqual(respuesta.status_code, 302)
+        self.assertIn(reverse("login"), respuesta.headers["Location"])
+
+    def test_listado_general_muestra_a_todos_los_duenos(self):
+        # El catálogo es público y completo: se ven productos de
+        # varios autores, con su propietario.
+        respuesta = self.client.get(reverse("producto_lista"))
+
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertContains(respuesta, "Portátil")
+        self.assertContains(respuesta, "Publicado por:")
+        self.assertContains(respuesta, "juan")
+
+    def test_otro_usuario_no_puede_editar_mi_producto(self):
+        # María teclea la URL a mano: la vista filtra por
+        # usuario=request.user y no encuentra el producto.
+        self.client.force_login(self.maria)
+
+        respuesta = self.client.get(
+            reverse("producto_editar", args=[self.producto_de_juan.pk])
+        )
+
+        self.assertEqual(respuesta.status_code, 404)
+
+    def test_otro_usuario_no_puede_editar_mi_producto_con_post(self):
+        self.client.force_login(self.maria)
+
+        respuesta = self.client.post(
+            reverse("producto_editar", args=[self.producto_de_juan.pk]),
+            {
+                "nombre": "Hackeado",
+                "descripcion": "",
+                "precio": "1.00",
+                "categoria": self.categoria.pk,
+            },
+        )
+
+        self.assertEqual(respuesta.status_code, 404)
+        self.producto_de_juan.refresh_from_db()
+        self.assertEqual(self.producto_de_juan.nombre, "Portátil")
+
+    def test_otro_usuario_no_puede_eliminar_mi_producto(self):
+        self.client.force_login(self.maria)
+
+        respuesta = self.client.post(
+            reverse("producto_eliminar", args=[self.producto_de_juan.pk])
+        )
+
+        self.assertEqual(respuesta.status_code, 404)
+        self.assertTrue(
+            Producto.objects.filter(pk=self.producto_de_juan.pk).exists()
+        )
+
+    def test_el_dueno_si_puede_editar_y_borrar(self):
+        self.client.force_login(self.juan)
+
+        respuesta = self.client.post(
+            reverse("producto_editar", args=[self.producto_de_juan.pk]),
+            {
+                "nombre": "Portátil Lenovo",
+                "descripcion": "Actualizado",
+                "precio": "849.99",
+                "categoria": self.categoria.pk,
+            },
+        )
+
+        self.assertEqual(respuesta.status_code, 302)
+        self.producto_de_juan.refresh_from_db()
+        self.assertEqual(self.producto_de_juan.nombre, "Portátil Lenovo")
+
+    def test_botones_ocultos_para_los_ajenos(self):
+        # Interfaz, no seguridad: quien no es el dueño ni siquiera
+        # ve los enlaces de editar y eliminar en el detalle.
+        self.client.force_login(self.maria)
+
+        respuesta = self.client.get(
+            reverse("producto_detalle", args=[self.producto_de_juan.pk])
+        )
+
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertContains(respuesta, "Propietario:")
+        self.assertNotContains(respuesta, reverse("producto_editar", args=[self.producto_de_juan.pk]))
+
+    def test_el_dueno_si_ve_los_botones(self):
+        self.client.force_login(self.juan)
+
+        respuesta = self.client.get(
+            reverse("producto_detalle", args=[self.producto_de_juan.pk])
+        )
+
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertContains(respuesta, reverse("producto_editar", args=[self.producto_de_juan.pk]))
+
+    def test_el_detalle_es_publico(self):
+        # Cualquiera, sin sesión, ve la ficha y al propietario.
+        respuesta = self.client.get(
+            reverse("producto_detalle", args=[self.producto_de_juan.pk])
+        )
+
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertContains(respuesta, "Propietario:")
+        self.assertContains(respuesta, "juan")
+
+    def test_home_cuenta_tus_productos(self):
+        self.client.force_login(self.juan)
+
+        respuesta = self.client.get(reverse("home"))
+
+        self.assertEqual(respuesta.status_code, 200)
+        # Tiene uno propio en setUp.
+        self.assertContains(respuesta, "producto(s)")

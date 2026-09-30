@@ -1,0 +1,39 @@
+{# Página de error para "no encontrado". Django la usa solo cuando #}
+{# DEBUG=False; en desarrollo muestra la pantalla técnica con la pila. #}
+{# Es la que verá, por ejemplo, alguien que intente editar un producto #}
+{# ajeno escribiendo la URL a mano: get_object_or_404 no lo encuentra. #}
+{% extends "base.html" %}
+
+{% block title %}
+Página no encontrada
+{% endblock %}
+
+{% block content %}
+
+<div class="text-center py-5">
+
+    <h1 class="display-1">
+        404
+    </h1>
+
+    <h2>
+        Página no encontrada
+    </h2>
+
+    <p class="text-muted">
+
+        El recurso solicitado no existe
+        o no está disponible.
+
+    </p>
+
+    <a
+        href="{% url 'home' %}"
+        class="btn btn-primary"
+    >
+        Volver al inicio
+    </a>
+
+</div>
+
+{% endblock %}

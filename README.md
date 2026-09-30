@@ -7,17 +7,19 @@ Aplicación web académica para gestionar un catálogo de productos y categoría
 - Registro de usuarios e inicio y cierre de sesión.
 - Listado y detalle público de productos.
 - Creación, edición y eliminación de productos para usuarios autenticados.
+- Propiedad de los productos: cada uno queda asociado a su creador y solo él puede editarlo o eliminarlo.
+- Página «Mis productos» con el listado personal de cada cuenta.
 - Gestión de categorías para usuarios autenticados.
 - Recuperación de contraseña mediante las vistas integradas de Django.
-- Panel de administración de Django.
-
-Actualmente, cualquier usuario autenticado puede editar o eliminar cualquier producto. Los productos aún no tienen un propietario asociado.
+- Panel de administración de Django con búsqueda y filtros.
+- Interfaz adaptable con Bootstrap 5, navegación responsive y mensajes de estado.
+- Páginas de error personalizadas para 403 y 404.
 
 ## Tecnologías
 
 - Python 3.12 y Django 6.1.1 comprobados en el entorno local.
 - SQLite (`db.sqlite3`) como base de datos de desarrollo.
-- Plantillas Django; no se necesita un proceso de compilación frontend.
+- Plantillas Django y Bootstrap 5 cargado desde CDN; no se necesita un proceso de compilación frontend.
 
 El proyecto aún no cuenta con un manifiesto de dependencias (`requirements.txt` o `pyproject.toml`).
 
@@ -70,7 +72,9 @@ El panel está disponible en <http://127.0.0.1:8000/admin/>. Detén el servidor 
 
 ## Modelo de datos
 
-Una `Categoria` puede contener varios `Producto`; cada producto pertenece a una categoría. Los productos guardan nombre, descripción, precio y fecha de creación. Al eliminar una categoría, Django elimina también sus productos asociados.
+Una `Categoria` puede contener varios `Producto`; cada producto pertenece a una categoría. Un `Usuario` puede tener varios `Producto`; cada producto tiene un único propietario. Los productos guardan nombre, descripción, precio, categoría, propietario y fecha de creación. Al eliminar una categoría, Django elimina también sus productos asociados; al eliminar una cuenta, sus productos.
+
+El propietario no se elige en el formulario: lo asigna la vista con `request.user` mediante `form.save(commit=False)`, y las vistas de edición y eliminación filtran con `usuario=request.user`, de modo que cualquier intento de entrar por URL directa a un producto ajeno responde 404.
 
 ## Recuperación de contraseña
 
@@ -83,4 +87,4 @@ python manage.py check
 python manage.py test
 ```
 
-La suite cubre las páginas públicas, la protección de las vistas privadas, el CRUD de categorías y productos, el registro y el flujo completo de recuperación de contraseña.
+La suite cubre las páginas públicas, la protección de las vistas privadas, el CRUD de categorías y productos, el registro, el flujo completo de recuperación de contraseña y el control de propiedad sobre los productos (propietario asignado automáticamente, «Mis productos» y bloqueo de edición y borrado ajenos). Ejecuta `python manage.py test` para verificarla.
