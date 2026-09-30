@@ -21,3 +21,13 @@ Thumbs.db
 
 # Sistema
 *.exe
+
+# Python / Django
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.venv/
+
+# Base de datos local (se genera con migrate)
+db.sqlite3
