@@ -20,8 +20,19 @@ Esos los trae Django montados con 'django.contrib.auth.urls' en tienda/urls.py.
 # base.html se encarga de pintarlo como una alerta de Bootstrap.
 from django.contrib import messages
 
+# PermissionDenied es la excepción que Django traduce en un 403 Forbidden.
+# La usamos cuando alguien intenta tocar un producto que no es suyo.
+from django.core.exceptions import PermissionDenied
+
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login
+
+# User lo necesitamos en el panel de administración, para listar cuentas.
+from django.contrib.auth.models import User
+
+# staff_member_required deja pasar solo a usuarios con is_staff=True
+# (los demás ni siquiera llegan a ver la vista).
+from django.contrib.admin.views.decorators import staff_member_required
 
 from django.shortcuts import (
     render,
@@ -35,6 +46,13 @@ from .forms import (
     RegistroForm,
     CategoriaForm,
     ProductoForm,
+)
+
+# Las reglas de quién puede qué viven en permissions.py.
+# Aquí solo las consultamos.
+from .permissions import (
+    puede_editar_producto,
+    puede_eliminar_producto,
 )
 
 
@@ -368,18 +386,25 @@ def mis_productos(request):
 @login_required
 def producto_editar(request, pk):
 
-    # Aquí está la seguridad real del ejercicio 3.
-    # Al añadir usuario=request.user a la consulta, Django busca un
-    # producto que a la vez tenga esa id Y me pertenezca a mí.
-    #
-    # Si maría se inventa la url /productos/5/editar/ de un producto
-    # de juan, no encuentra nada y devuelve 404: ni siquiera sabe que
-    # el producto existe.
+    # Primero localizamos el producto sin más: ya no filtramos por
+    # usuario aquí, porque el administrador también tiene que poder
+    # llegar a productos ajenos.
     producto = get_object_or_404(
         Producto,
-        pk=pk,
-        usuario=request.user
+        pk=pk
     )
+
+    # Y aquí está la comprobación de permisos del ejercicio 4.
+    # Si no es el dueño ni is_staff, lanzamos PermissionDenied,
+    # que Django convierte en un 403 Forbidden con nuestra plantilla.
+    #
+    # Fíjate en que esto va en el SERVIDOR: ocultar el botón en la
+    # plantilla no serviría de nada, cualquiera puede escribir la URL.
+    if not puede_editar_producto(
+        request.user,
+        producto
+    ):
+        raise PermissionDenied
 
     if request.method == "POST":
 
@@ -397,7 +422,10 @@ def producto_editar(request, pk):
                 "Producto actualizado correctamente."
             )
 
-            return redirect("mis_productos")
+            # Volvemos al listado general: desde aquí también puede
+            # haber llegado el administrador, editando un producto
+            # que no es suyo, y "Mis productos" no lo mostraría.
+            return redirect("producto_lista")
 
     else:
 
@@ -419,14 +447,19 @@ def producto_editar(request, pk):
 @login_required
 def producto_eliminar(request, pk):
 
-    # Mismo filtro que en la edición: propietario incluido.
-    # Un usuario no puede borrar productos de otros ni siquiera
-    # escribiendo la URL a mano.
     producto = get_object_or_404(
         Producto,
-        pk=pk,
-        usuario=request.user
+        pk=pk
     )
+
+    # Mismo esquema que en la edición: dueño o administrador.
+    # Un usuario normal no puede borrar productos ajenos ni siquiera
+    # enviando el formulario con POST a mano.
+    if not puede_eliminar_producto(
+        request.user,
+        producto
+    ):
+        raise PermissionDenied
 
     if request.method == "POST":
 
@@ -437,7 +470,8 @@ def producto_eliminar(request, pk):
             "Producto eliminado correctamente."
         )
 
-        return redirect("mis_productos")
+        # Igual que al editar: al listado general.
+        return redirect("producto_lista")
 
     return render(
         request,
@@ -445,4 +479,39 @@ def producto_eliminar(request, pk):
         {
             "producto": producto
         }
+    )
+
+
+# ----------------------------------------------------------------------
+# Panel interno de administración (solo usuarios staff)
+# ----------------------------------------------------------------------
+@staff_member_required
+def panel_admin(request):
+
+    # El decorador hace todo el trabajo de control de acceso:
+    # si quien entra no tiene is_staff, ni llega a esta función
+    # (lo manda al login de /admin/).
+    #
+    # Es un panel informativo con vistas rápidas: cuántos usuarios y
+    # productos hay, y la lista completa con su propietario.
+    productos = Producto.objects.select_related(
+        "categoria",
+        "usuario",
+    ).order_by(
+        "-fecha_creacion"
+    )
+
+    usuarios = User.objects.all().order_by(
+        "username"
+    )
+
+    context = {
+        "productos": productos,
+        "usuarios": usuarios,
+    }
+
+    return render(
+        request,
+        "administracion/panel.html",
+        context
     )

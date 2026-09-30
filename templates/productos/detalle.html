@@ -60,12 +60,12 @@
 
         </p>
 
-        {# user == producto.usuario compara el visitante con el dueño. #}
-        {# Si no coincide, ni siquiera se pintan los enlaces. #}
+        {# Dos formas de tener estos botones: ser el dueño del #}
+        {# producto o ser administrador (is_staff). #}
+        {# Si no coincide ninguna, ni siquiera se pintan los enlaces. #}
         {# La vista sigue protegida igual: aunque alguien teclee la #}
-        {# URL a mano, get_object_or_404(..., usuario=request.user) #}
-        {# devuelve 404. #}
-        {% if user == producto.usuario %}
+        {# URL a mano, responde 403 Forbidden. #}
+        {% if user == producto.usuario or user.is_staff %}
 
             <hr>
 

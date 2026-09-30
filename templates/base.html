@@ -92,7 +92,7 @@
 {# bg-light pinta el fondo de la página de gris claro. #}
 <body class="bg-light">
 
-        {# navbar-dark + bg-dark = texto blanco sobre fondo oscuro. #}
+    {# navbar-dark + bg-dark = texto blanco sobre fondo oscuro. #}
     {# expand-lg añade el botón de hamburguesa por debajo de lg. #}
     <nav
         class="navbar navbar-expand-lg navbar-dark bg-dark"
@@ -107,7 +107,7 @@
                 Tienda Django
             </a>
 
-                        {# Este botón solo aparece en móvil. Al pulsarlo despliega #}
+            {# Este botón solo aparece en móvil. Al pulsarlo despliega #}
             {# el menú en el div de abajo (data-bs-target es su id). #}
             <button
                 class="navbar-toggler"
@@ -162,11 +162,29 @@
 
                     </li>
 
+                    {# Este enlace solo lo ven los usuarios staff: #}
+                    {# un usuario normal no lo lleva en el menú, aunque #}
+                    {# la seguridad real está en el decorador de la vista. #}
+                    {% if user.is_staff %}
+
+                    <li class="nav-item">
+
+                        <a
+                            class="nav-link"
+                            href="{% url 'panel_admin' %}"
+                        >
+                            Administración
+                        </a>
+
+                    </li>
+
+                    {% endif %}
+
                     {% endif %}
 
                 </ul>
 
-                                {# d-flex + gap-2 deja los elementos de la derecha en fila #}
+                {# d-flex + gap-2 deja los elementos de la derecha en fila #}
                 {# y separados. #}
                 <div class="d-flex align-items-center gap-2">
 
@@ -179,7 +197,23 @@
 
                         </span>
 
-                                                {# El logout sigue siendo POST con csrf_token: #}
+                        {# El rol, a la vista: badge rojo para administrador #}
+                        {# (is_staff) y gris para cualquier otra cuenta. #}
+                        {% if user.is_staff %}
+
+                            <span class="badge bg-danger">
+                                Administrador
+                            </span>
+
+                        {% else %}
+
+                            <span class="badge bg-secondary">
+                                Usuario
+                            </span>
+
+                        {% endif %}
+
+                        {# El logout sigue siendo POST con csrf_token: #}
                         {# un enlace normal (GET) no debe cerrar sesiones. #}
                         <form
                             method="post"
@@ -223,11 +257,11 @@
 
     </nav>
 
-        {# Todo el contenido de cada página entra dentro de este contenedor, #}
+    {# Todo el contenido de cada página entra dentro de este contenedor, #}
     {# con margen arriba y abajo (py-4). #}
     <main class="container py-4">
 
-                {# Los mensajes que las vistas guardan con messages.success/error #}
+        {# Los mensajes que las vistas guardan con messages.success/error #}
         {# se pintan aquí como alertas de Bootstrap. #}
         {# Ojo con los tags: Django usa "error" y Bootstrap no tiene #}
         {# alert-error (su color de error es alert-danger), por eso el #}
@@ -267,7 +301,7 @@
 
     </main>
 
-        {# JS de Bootstrap (bundle = JS + Popper). Hace falta para el menú #}
+    {# JS de Bootstrap (bundle = JS + Popper). Hace falta para el menú #}
     {# móvil, las alertas que se cierran solas, etc. #}
     <script
         src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"

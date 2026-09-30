@@ -96,11 +96,11 @@ Productos
                         Ver
                     </a>
 
-                    {# Editar y Eliminar solo para el dueño del producto. #}
+                    {# Editar y Eliminar para el dueño... o para el staff. #}
                     {# Ojo: esto es comodidad de interfaz, no seguridad: #}
                     {# la seguridad real está en producto_editar/eliminar, #}
-                    {# que filtran por usuario=request.user y devuelven 404. #}
-                    {% if user == producto.usuario %}
+                    {# que comprueban el permiso en el servidor y responden 403. #}
+                    {% if user == producto.usuario or user.is_staff %}
 
                         <a
                             href="{% url 'producto_editar' producto.pk %}"

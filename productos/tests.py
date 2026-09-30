@@ -13,12 +13,13 @@ Se ejecutan con:
 
 from decimal import Decimal
 
-from django.contrib.auth.models import User
+from django.contrib.auth.models import AnonymousUser, User
 from django.core import mail
 from django.test import TestCase
 from django.urls import reverse
 
 from .models import Categoria, Producto
+from .permissions import puede_editar_producto, puede_eliminar_producto
 
 
 class DatosDePrueba:
@@ -477,15 +478,17 @@ class PropiedadDeProductosTests(TestCase):
         self.assertContains(respuesta, "juan")
 
     def test_otro_usuario_no_puede_editar_mi_producto(self):
-        # María teclea la URL a mano: la vista filtra por
-        # usuario=request.user y no encuentra el producto.
+        # María teclea la URL a mano. El producto existe, así que
+        # ahora ya no es un 404: es un 403 Forbidden porque no es
+        # suyo ni es staff. Nuestra plantilla 403.html lo pinta.
         self.client.force_login(self.maria)
 
         respuesta = self.client.get(
             reverse("producto_editar", args=[self.producto_de_juan.pk])
         )
 
-        self.assertEqual(respuesta.status_code, 404)
+        self.assertEqual(respuesta.status_code, 403)
+        self.assertTemplateUsed(respuesta, "403.html")
 
     def test_otro_usuario_no_puede_editar_mi_producto_con_post(self):
         self.client.force_login(self.maria)
@@ -500,18 +503,19 @@ class PropiedadDeProductosTests(TestCase):
             },
         )
 
-        self.assertEqual(respuesta.status_code, 404)
+        self.assertEqual(respuesta.status_code, 403)
         self.producto_de_juan.refresh_from_db()
         self.assertEqual(self.producto_de_juan.nombre, "Portátil")
 
     def test_otro_usuario_no_puede_eliminar_mi_producto(self):
+        # Tampoco borra: mismo control de permisos en la vista.
         self.client.force_login(self.maria)
 
         respuesta = self.client.post(
             reverse("producto_eliminar", args=[self.producto_de_juan.pk])
         )
 
-        self.assertEqual(respuesta.status_code, 404)
+        self.assertEqual(respuesta.status_code, 403)
         self.assertTrue(
             Producto.objects.filter(pk=self.producto_de_juan.pk).exists()
         )
@@ -574,3 +578,167 @@ class PropiedadDeProductosTests(TestCase):
         self.assertEqual(respuesta.status_code, 200)
         # Tiene uno propio en setUp.
         self.assertContains(respuesta, "producto(s)")
+
+
+# ----------------------------------------------------------------------
+# Ejercicio 4: roles y permisos
+# ----------------------------------------------------------------------
+class RolesYPermisosTests(TestCase):
+
+    def setUp(self):
+        self.juan = DatosDePrueba.usuario("juan", "juan@email.com")
+        self.maria = DatosDePrueba.usuario("maria", "maria@email.com")
+
+        # El administrador de la práctica es simplemente una cuenta
+        # con is_staff=True. No hace falta que sea superusuario.
+        self.admin = DatosDePrueba.usuario("admin", "admin@email.com")
+        self.admin.is_staff = True
+        self.admin.save()
+
+        self.categoria = DatosDePrueba.categoria()
+        self.producto_de_juan = DatosDePrueba.producto(
+            self.categoria, self.juan, nombre="Portátil"
+        )
+
+    # ------------------------------------------------------------------
+    # Las funciones de permissions.py, probadas en aislamiento
+    # ------------------------------------------------------------------
+    def test_regla_de_permisos(self):
+        # Sin sesión no se edita ni se borra nada.
+        anonimo = AnonymousUser()
+        self.assertFalse(puede_editar_producto(anonimo, self.producto_de_juan))
+        self.assertFalse(puede_eliminar_producto(anonimo, self.producto_de_juan))
+
+        # Otro usuario normal tampoco.
+        self.assertFalse(puede_editar_producto(self.maria, self.producto_de_juan))
+        self.assertFalse(puede_eliminar_producto(self.maria, self.producto_de_juan))
+
+        # El dueño, sí.
+        self.assertTrue(puede_editar_producto(self.juan, self.producto_de_juan))
+        self.assertTrue(puede_eliminar_producto(self.juan, self.producto_de_juan))
+
+        # Y el administrador, con cualquier producto.
+        self.assertTrue(puede_editar_producto(self.admin, self.producto_de_juan))
+        self.assertTrue(puede_eliminar_producto(self.admin, self.producto_de_juan))
+
+    # ------------------------------------------------------------------
+    # El administrador puede con productos ajenos
+    # ------------------------------------------------------------------
+    def test_staff_puede_abrir_la_edicion_de_un_producto_ajeno(self):
+        self.client.force_login(self.admin)
+
+        respuesta = self.client.get(
+            reverse("producto_editar", args=[self.producto_de_juan.pk])
+        )
+
+        # Donde maria recibía 403, el admin entra sin problema.
+        self.assertEqual(respuesta.status_code, 200)
+
+    def test_staff_puede_editar_un_producto_ajeno(self):
+        self.client.force_login(self.admin)
+
+        respuesta = self.client.post(
+            reverse("producto_editar", args=[self.producto_de_juan.pk]),
+            {
+                "nombre": "Portátil Lenovo",
+                "descripcion": "Corregido por el admin",
+                "precio": "849.99",
+                "categoria": self.categoria.pk,
+            },
+        )
+
+        self.assertEqual(respuesta.status_code, 302)
+        self.producto_de_juan.refresh_from_db()
+        self.assertEqual(self.producto_de_juan.nombre, "Portátil Lenovo")
+        # El propietario no cambia: el admin solo ha editado.
+        self.assertEqual(self.producto_de_juan.usuario, self.juan)
+
+    def test_staff_puede_eliminar_un_producto_ajeno(self):
+        self.client.force_login(self.admin)
+
+        respuesta = self.client.post(
+            reverse("producto_eliminar", args=[self.producto_de_juan.pk])
+        )
+
+        self.assertEqual(respuesta.status_code, 302)
+        self.assertFalse(
+            Producto.objects.filter(pk=self.producto_de_juan.pk).exists()
+        )
+
+    def test_staff_ve_los_botones_en_producto_ajeno(self):
+        self.client.force_login(self.admin)
+
+        respuesta = self.client.get(
+            reverse("producto_detalle", args=[self.producto_de_juan.pk])
+        )
+
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertContains(
+            respuesta, reverse("producto_editar", args=[self.producto_de_juan.pk])
+        )
+
+    # ------------------------------------------------------------------
+    # El panel interno: solo staff
+    # ------------------------------------------------------------------
+    def test_panel_redirige_al_login_de_admin_si_no_hay_sesion(self):
+        respuesta = self.client.get(reverse("panel_admin"))
+
+        # staff_member_required manda a /admin/login/, no a nuestro login.
+        self.assertEqual(respuesta.status_code, 302)
+        self.assertIn("/admin/login/", respuesta.headers["Location"])
+
+    def test_panel_redirige_si_es_un_usuario_normal(self):
+        self.client.force_login(self.maria)
+
+        respuesta = self.client.get(reverse("panel_admin"))
+
+        self.assertEqual(respuesta.status_code, 302)
+        self.assertIn("/admin/login/", respuesta.headers["Location"])
+
+    def test_panel_se_abre_para_el_staff(self):
+        DatosDePrueba.producto(self.categoria, self.maria, nombre="Ratón")
+        self.client.force_login(self.admin)
+
+        respuesta = self.client.get(reverse("panel_admin"))
+
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertTemplateUsed(respuesta, "administracion/panel.html")
+        # Los dos contadores del panel.
+        self.assertContains(respuesta, "Usuarios")
+        self.assertContains(respuesta, "Productos")
+        # Y la lista completa: se ven productos de maria y de juan.
+        self.assertContains(respuesta, "Ratón")
+        self.assertContains(respuesta, "Portátil")
+
+    # ------------------------------------------------------------------
+    # Interfaz: enlace al panel y badge de rol en el menú
+    # ------------------------------------------------------------------
+    def test_el_enlace_de_administracion_no_se_ve_como_normal(self):
+        self.client.force_login(self.maria)
+
+        respuesta = self.client.get(reverse("home"))
+
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertNotContains(respuesta, reverse("panel_admin"))
+
+    def test_el_enlace_de_administracion_se_ve_como_staff(self):
+        self.client.force_login(self.admin)
+
+        respuesta = self.client.get(reverse("home"))
+
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertContains(respuesta, reverse("panel_admin"))
+        self.assertContains(respuesta, "Administración")
+
+    def test_badge_de_rol_en_el_menu(self):
+        # Normal: badge gris.
+        self.client.force_login(self.maria)
+        respuesta = self.client.get(reverse("home"))
+        self.assertContains(respuesta, "badge bg-secondary")
+        self.assertNotContains(respuesta, "badge bg-danger")
+
+        # Administrador: badge rojo con su rol.
+        self.client.force_login(self.admin)
+        respuesta = self.client.get(reverse("home"))
+        self.assertContains(respuesta, "badge bg-danger")
+        self.assertContains(respuesta, "Administrador")

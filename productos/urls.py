@@ -102,4 +102,14 @@ urlpatterns = [
         views.producto_eliminar,
         name="producto_eliminar"
     ),
+
+    # ------------------------------------------------------------------
+    # Panel interno de administración (solo is_staff, lo comprueba
+    # el decorador @staff_member_required de la vista)
+    # ------------------------------------------------------------------
+    path(
+        "panel-admin/",
+        views.panel_admin,
+        name="panel_admin"
+    ),
 ]

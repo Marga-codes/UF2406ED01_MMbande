@@ -8,6 +8,8 @@ Aplicación web académica para gestionar un catálogo de productos y categoría
 - Listado y detalle público de productos.
 - Creación, edición y eliminación de productos para usuarios autenticados.
 - Propiedad de los productos: cada uno queda asociado a su creador y solo él puede editarlo o eliminarlo.
+- Roles: los administradores (`is_staff`) pueden editar y eliminar cualquier producto.
+- Panel interno de administración en `/panel-admin/`, solo para usuarios staff.
 - Página «Mis productos» con el listado personal de cada cuenta.
 - Gestión de categorías para usuarios autenticados.
 - Recuperación de contraseña mediante las vistas integradas de Django.
@@ -74,7 +76,16 @@ El panel está disponible en <http://127.0.0.1:8000/admin/>. Detén el servidor 
 
 Una `Categoria` puede contener varios `Producto`; cada producto pertenece a una categoría. Un `Usuario` puede tener varios `Producto`; cada producto tiene un único propietario. Los productos guardan nombre, descripción, precio, categoría, propietario y fecha de creación. Al eliminar una categoría, Django elimina también sus productos asociados; al eliminar una cuenta, sus productos.
 
-El propietario no se elige en el formulario: lo asigna la vista con `request.user` mediante `form.save(commit=False)`, y las vistas de edición y eliminación filtran con `usuario=request.user`, de modo que cualquier intento de entrar por URL directa a un producto ajeno responde 404.
+El propietario no se elige en el formulario: lo asigna la vista con `request.user` mediante `form.save(commit=False)`, y las vistas de edición y eliminación comprueban el permiso antes de hacer nada, de modo que cualquier intento de entrar por URL directa a un producto ajeno responde 403.
+
+## Roles y permisos
+
+- **Usuario normal**: crea productos propios y solo edita o elimina los suyos.
+- **Administrador** (`is_staff = True`): gestiona cualquier producto, ve el enlace «Administración» en el menú y accede al panel interno.
+
+Las reglas están centralizadas en `productos/permissions.py` con las funciones `puede_editar_producto` y `puede_eliminar_producto`. Las vistas responden **403 Forbidden** (plantilla `templates/403.html`) cuando no se cumple el permiso. En las plantillas se comprueba además `user.is_staff` para decidir si pintar botones, enlaces y el badge de rol, pero eso es solo interfaz: la comprobación real se hace en el servidor.
+
+Para dar permiso de administrador a una cuenta: `/admin/` → Usuarios → seleccionar la cuenta → marcar «Es staff».
 
 ## Recuperación de contraseña
 
@@ -87,4 +98,4 @@ python manage.py check
 python manage.py test
 ```
 
-La suite cubre las páginas públicas, la protección de las vistas privadas, el CRUD de categorías y productos, el registro, el flujo completo de recuperación de contraseña y el control de propiedad sobre los productos (propietario asignado automáticamente, «Mis productos» y bloqueo de edición y borrado ajenos). Ejecuta `python manage.py test` para verificarla.
+La suite cubre las páginas públicas, la protección de las vistas privadas, el CRUD de categorías y productos, el registro, el flujo completo de recuperación de contraseña, el control de propiedad sobre los productos y los roles (administrador que edita productos ajenos, panel restringido a staff y visibilidad de botones y enlaces según el rol). Ejecuta `python manage.py test` para verificarla.
