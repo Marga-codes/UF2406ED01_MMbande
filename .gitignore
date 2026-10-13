@@ -29,6 +29,11 @@ __pycache__/
 venv/
 .venv/
 
+# Documentacion local / notas de agente
+/AGENTS.md
+/skills-lock.json
+/server.err
+
 # Enunciados de la práctica (no subir documentación fuente)
 UF2406ED01_*.pdf
 UF2406ED01_*.txt
