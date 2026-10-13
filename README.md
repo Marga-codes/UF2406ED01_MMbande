@@ -39,6 +39,8 @@ El proyecto aún no cuenta con un manifiesto de dependencias (`requirements.txt`
 │   ├── views.py
 │   ├── urls.py
 │   └── tests.py
+├── courses/                   # Convocatorias y modelos del catálogo de cursos
+├── enrollments/               # Inscripciones, lista de espera y documentos
 ├── templates/
 │   ├── administracion/         # Panel interno para staff
 │   ├── categorias/
@@ -100,6 +102,8 @@ El panel está disponible en <http://127.0.0.1:8000/admin/>. Detén el servidor 
 ## Modelo de datos
 
 Una `Categoria` puede contener varios `Producto`; cada producto pertenece a una categoría. Un `Usuario` puede tener varios `Producto`; cada producto tiene un único propietario. Los productos guardan nombre, descripción, precio, categoría, propietario y fecha de creación. Al eliminar una categoría, Django elimina también sus productos asociados; al eliminar una cuenta, sus productos.
+
+La rama `marga` añade los modelos `Convocatoria`, `Enrollment`, `WaitlistEntry`, `EnrollmentAnswer` y `EnrollmentDocument`. La convocatoria referencia `courses.Course`, que debe integrarse desde la rama que desarrolla el catálogo de cursos antes de generar y aplicar las migraciones de estas apps. El PDF de requisitos omite la declaración de `reserved_places` y `discount_amount`; sus tipos y valores iniciales se han inferido siguiendo los campos de plazas e importes del propio esquema.
 
 El propietario no se elige en el formulario: lo asigna la vista con `request.user` mediante `form.save(commit=False)`, y las vistas de edición y eliminación comprueban el permiso antes de hacer nada, de modo que cualquier intento de entrar por URL directa a un producto ajeno responde 403.
 

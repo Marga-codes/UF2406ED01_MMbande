@@ -41,6 +41,8 @@ INSTALLED_APPS = [
     # Nuestra aplicación, la que tiene los modelos de categoría y producto.
     # Sin este registro Django no encontraría ni los modelos ni las plantillas.
     'productos',
+    'courses',
+    'enrollments',
 ]
 
 MIDDLEWARE = [
